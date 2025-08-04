@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Interactive Cutting of High-Resolution Triangle Meshes</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="main-title">Real-Time Interactive Cutting of High-Resolution Triangle Meshes Without Topological
+                Destruction</h1>
+            <h2 class="subtitle">A Face-Based Flap Simulation Approach in Unity</h2>
+            <div class="authors">
+                <p><strong>Bharath Honakatti</strong>, Manoj R</p>
+                <p class="department">Department of Computer Science and Engineering</p>
+                <p class="contact">Corresponding author: Bharath Honakatti, <a
+                        href="mailto:bharathhonakatti25@gmail.com">bharathhonakatti25@gmail.com</a></p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <article class="research-paper">
+                <section class="abstract">
+                    <h2>Abstract</h2>
+                    <p>Real-time mesh manipulation has become a fundamental requirement in simulation-driven fields such
+                        as surgical training, AR-based modeling, and digital twin engineering. However, performing
+                        interactive incisions on high-resolution triangle meshes often leads to topological degradation,
+                        significant performance overhead, and unpredictable mesh artifacts — especially in systems that
+                        rely on destructive remeshing or global topology regeneration.</p>
+
+                    <p>In this paper, we propose a novel, non-destructive mesh incision framework that enables users to
+                        perform precision cuts on dense triangle meshes in real time while preserving the original
+                        topology. Our method introduces a face-based incision mechanism that begins with a barycentric
+                        anchor point detection via raycasting, identifying the exact triangle under user interaction. A
+                        tolerance-based triangle face grouping strategy is then applied using normal vector alignment to
+                        form logical face regions.</p>
+
+                    <p>An interactive cut vector projection algorithm segments these face groups into discrete flaps
+                        without remeshing or altering neighboring topology. Flaps are reconstructed through localized
+                        vertex remapping and are made interactable via a constrained linear drag system that allows
+                        users to "peel" open the mesh, simulating physical incisions.</p>
+
+                    <p>The entire system is implemented in Unity and optimized for high-poly performance, successfully
+                        operating on models exceeding 45,000 triangles with interactive frame rates (≥ 120 FPS). Our
+                        results demonstrate the system's robustness in handling dense meshes with sub-millimeter
+                        incision precision and zero structural deformation.</p>
+                </section>
+
+                <section class="keywords">
+                    <h3>Categories</h3>
+                    <p><strong>Computing methodologies</strong> → Mesh models; Shape modeling; Physical simulation;<br>
+                        <strong>Applied computing</strong> → Life and medical sciences; Interactive learning
+                        environments;<br>
+                        <strong>Human-centered computing</strong> → Virtual reality; Visualization systems and tools;
+                    </p>
+
+                    <h3>Keywords</h3>
+                    <p>High-Poly Mesh Cutting, Non-Destructive Geometry Processing, Real-Time Simulation, Triangle Mesh
+                        Incision, Flap Separation, Interactive Mesh Editing, Surgical Simulation, AR/VR, Unity3D,
+                        Barycentric Face Detection</p>
+                </section>
+
+                <section class="introduction">
+                    <h2>1. Introduction</h2>
+                    <p>In the fields of surgical simulation, digital modeling, and interactive 3D learning, real-time
+                        mesh manipulation plays a crucial role in enhancing realism, accuracy, and user engagement.
+                        Among various operations, mesh cutting or incision is particularly important in applications
+                        such as virtual surgery, anatomy visualization, object disassembly, and material deformation
+                        simulation.</p>
+
+                    <p>However, most real-time cutting techniques face critical challenges when applied to
+                        high-resolution triangle meshes: they often rely on destructive remeshing, suffer from
+                        performance bottlenecks, or result in visual and topological inconsistencies.</p>
+
+                    <p>Traditional methods typically involve global mesh reconstruction or topology alteration, which
+                        are computationally expensive and prone to introducing structural errors, especially on dense or
+                        high-poly models. These limitations hinder real-time responsiveness and make the system
+                        unsuitable for high-fidelity or physically interactive environments like AR/VR-based surgical
+                        trainers or digital twin systems.</p>
+
+                    <p>To address these challenges, we propose a novel, non-destructive mesh incision system that
+                        supports interactive, real-time cutting of high-poly triangle meshes without altering the
+                        underlying mesh topology. Our system introduces a face-specific incision mechanism, where a
+                        user-defined cut is projected onto a pre-identified triangle face group.</p>
+                </section>
+
+                <section class="current-developments">
+                    <h2>2. Current Developments</h2>
+                    <p>Recent years have seen significant advancements in real-time 3D mesh editing for applications
+                        ranging from medical training simulators and AR-based design tools to interactive digital twins.
+                        Cutting and deforming 3D models is especially critical in surgical simulation and material
+                        testing environments, where visual fidelity and physical realism are essential.</p>
+
+                    <p>While several mesh cutting techniques exist, most fall into two categories: destructive global
+                        remeshing and boolean operations. Destructive methods typically involve slicing the mesh using a
+                        plane or geometry, then regenerating topology through remeshing algorithms. Although effective
+                        for low-polygon models, this approach introduces severe performance bottlenecks when applied to
+                        high-resolution triangle meshes (e.g., >50k faces).</p>
+
+                    <p>Modern surgical simulation platforms, such as Touch Surgery or Visible Body, avoid this problem
+                        by using pre-baked cut states or animation swapping, but these are non-interactive and lack
+                        flexibility. Other academic efforts using GPU tessellation or FEM-based simulation often
+                        sacrifice performance or scalability, especially on mobile or embedded platforms.</p>
+                </section>
+
+                <section class="approach">
+                    <h2>3. Our Approach</h2>
+                    <p>To address the limitations of current mesh cutting systems — particularly in handling
+                        high-resolution triangle meshes without topological destruction — we introduce a real-time,
+                        face-specific, non-destructive mesh incision framework. Our method is designed to provide
+                        sub-millimeter cutting precision, preserve mesh integrity, and allow for realistic flap-based
+                        interaction, all while maintaining real-time performance in Unity3D.</p>
+
+                    <p>Unlike conventional approaches that rely on global remeshing or boolean subtraction, our system
+                        operates locally at the triangle face level. The process begins with precise raycast detection,
+                        using Unity's collider system to identify the exact triangle under the user's mouse or touch
+                        input.</p>
+
+                    <div class="algorithm-grid">
+                        <div class="algorithm-card">
+                            <h3>3.1 Ray-Triangle Intersection Algorithm</h3>
+                            <p><strong>Purpose:</strong> Detect which triangle face the user clicks on for incision
+                                initialization</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 1. RayTriangleIntersection
+1. INPUT: mousePosition, camera, meshCollider
+2. OUTPUT: triangleIndex, hitPoint, barycentricCoordinates
+3. BEGIN
+4.   ray = CreateRayFromCameraToMouse(mousePosition, camera)
+5.   IF Raycast(ray, hitInfo) THEN
+6.     triangleIndex = hitInfo.triangleIndex
+7.     hitPoint = hitInfo.point
+8.     barycentricCoords = hitInfo.barycentricCoordinate
+9.     RETURN triangleIndex, hitPoint, barycentricCoords
+10.  ELSE
+11.    RETURN -1, null, null
+12.  END IF
+13. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.2 Closest Triangle Search Algorithm</h3>
+                            <p><strong>Purpose:</strong> Find the nearest triangle to a given 3D point using centroid
+                                distance calculation</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 2. FindClosestTriangle
+1. INPUT: worldPoint, vertices, triangles, transform
+2. OUTPUT: closestTriangleIndex
+3. BEGIN
+4.   closestTriangle = -1
+5.   closestDistance = INFINITY
+6.   FOR i = 0 TO triangles.length STEP 3 DO
+7.     v0 = transform.TransformPoint(vertices[triangles[i]])
+8.     v1 = transform.TransformPoint(vertices[triangles[i+1]])
+9.     v2 = transform.TransformPoint(vertices[triangles[i+2]])
+10.    triangleCenter = (v0 + v1 + v2) / 3
+11.    distance = Distance(worldPoint, triangleCenter)
+12.    IF distance < closestDistance THEN
+13.      closestDistance = distance
+14.      closestTriangle = i / 3
+15.    END IF
+16.  END FOR
+17.  RETURN closestTriangle
+18. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.3 Normal Vector Clustering Algorithm</h3>
+                            <p><strong>Purpose:</strong> Group triangles belonging to same face using normal vector
+                                similarity</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 4. NormalVectorClustering
+1. INPUT: mainFaceIndex, vertices, triangles, transform
+2. OUTPUT: faceTrianglesList
+3. BEGIN
+4.   faceTriangles = EmptyList()
+5.   triStart = mainFaceIndex * 3
+6.   v0 = TransformPoint(vertices[triangles[triStart]])
+7.   v1 = TransformPoint(vertices[triangles[triStart+1]])
+8.   v2 = TransformPoint(vertices[triangles[triStart+2]])
+9.   referenceNormal = NORMALIZE(CrossProduct(v1-v0, v2-v0))
+10.  FOR i = 0 TO triangles.length STEP 3 DO
+11.    tv0 = TransformPoint(vertices[triangles[i]])
+12.    tv1 = TransformPoint(vertices[triangles[i+1]])
+13.    tv2 = TransformPoint(vertices[triangles[i+2]])
+14.    triNormal = NORMALIZE(CrossProduct(tv1-tv0, tv2-tv0))
+15.    IF DotProduct(triNormal, referenceNormal) > 0.99 THEN
+16.      faceTriangles.Add(i)
+17.    END IF
+18.  END FOR
+19.  RETURN faceTriangles
+20. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.3 Plane-Point Distance Algorithm</h3>
+                            <p><strong>Purpose:</strong> Determine if a point lies within tolerance distance from a triangle face plane</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 3. PlanePointDistance
+1. INPUT: worldPoint, faceIndex, tolerance, vertices, triangles
+2. OUTPUT: isNearFace
+3. BEGIN
+4.   triStart = faceIndex * 3
+5.   v0 = TransformPoint(vertices[triangles[triStart]])
+6.   v1 = TransformPoint(vertices[triangles[triStart+1]])
+7.   v2 = TransformPoint(vertices[triangles[triStart+2]])
+8.   facePlane = CreatePlane(v0, v1, v2)
+9.   distance = ABS(facePlane.GetDistanceToPoint(worldPoint))
+10.  RETURN distance <= tolerance
+11. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.4 Normal Vector Clustering Algorithm</h3>
+                            <p><strong>Purpose:</strong> Group triangles belonging to same face using normal vector similarity</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 4. NormalVectorClustering
+1. INPUT: mainFaceIndex, vertices, triangles, transform
+2. OUTPUT: faceTrianglesList
+3. BEGIN
+4.   faceTriangles = EmptyList()
+5.   triStart = mainFaceIndex * 3
+6.   v0 = TransformPoint(vertices[triangles[triStart]])
+7.   v1 = TransformPoint(vertices[triangles[triStart+1]])
+8.   v2 = TransformPoint(vertices[triangles[triStart+2]])
+9.   referenceNormal = NORMALIZE(CrossProduct(v1-v0, v2-v0))
+10.  FOR i = 0 TO triangles.length STEP 3 DO
+11.    tv0 = TransformPoint(vertices[triangles[i]])
+12.    tv1 = TransformPoint(vertices[triangles[i+1]])
+13.    tv2 = TransformPoint(vertices[triangles[i+2]])
+14.    triNormal = NORMALIZE(CrossProduct(tv1-tv0, tv2-tv0))
+15.    IF DotProduct(triNormal, referenceNormal) > 0.99 THEN
+16.      faceTriangles.Add(i)
+17.    END IF
+18.  END FOR
+19.  RETURN faceTriangles
+20. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.5 Directional Projection and Classification</h3>
+                            <p><strong>Purpose:</strong> Split triangles into left/right or top/bottom flaps based on incision direction</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 5. DirectionalProjectionClassification
+1. INPUT: faceTriangles, incisionPoints, vertices, triangles
+2. OUTPUT: leftFlap, rightFlap, leftoverTriangles
+3. BEGIN
+4.   incisionStart = incisionPoints[0]
+5.   incisionEnd = incisionPoints[LAST]
+6.   incisionVector = incisionEnd - incisionStart
+7.   cutLength = Magnitude(incisionVector)
+8.   cutDir = NORMALIZE(incisionVector)
+9.   isHorizontal = ABS(incisionVector.x) > ABS(incisionVector.y)
+10.  leftFlap = EmptyList()
+11.  rightFlap = EmptyList()
+12.  leftoverTriangles = EmptyList()
+13.  FOR EACH triangle IN faceTriangles DO
+14.    center = CalculateTriangleCenter(triangle)
+15.    toCenter = center - incisionStart
+16.    proj = DotProduct(toCenter, cutDir)
+17.    IF proj >= -cutTolerance AND proj <= cutLength + cutTolerance THEN
+18.      IF isHorizontal THEN
+19.        IF center.y > (incisionStart.y + incisionEnd.y) / 2 THEN
+20.          leftFlap.Add(triangle)
+21.        ELSE
+22.          rightFlap.Add(triangle)
+23.        END IF
+24.      ELSE
+25.        IF center.x < (incisionStart.x + incisionEnd.x) / 2 THEN
+26.          leftFlap.Add(triangle)
+27.        ELSE
+28.          rightFlap.Add(triangle)
+29.        END IF
+30.      END IF
+31.    ELSE
+32.      leftoverTriangles.Add(triangle)
+33.    END IF
+34.  END FOR
+35.  RETURN leftFlap, rightFlap, leftoverTriangles
+36. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.6 Vertex Remapping Algorithm</h3>
+                            <p><strong>Purpose:</strong> Create new mesh with subset of triangles while maintaining vertex references</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 6. VertexRemapping
+1. INPUT: triangleIndices, vertices, normals, uvs, allTriangles
+2. OUTPUT: newMesh
+3. BEGIN
+4.   vertexRemap = EmptyDictionary()
+5.   newVertices = EmptyList()
+6.   newNormals = EmptyList()
+7.   newUVs = EmptyList()
+8.   newTriangles = EmptyList()
+9.   FOR EACH arrayIndex IN triangleIndices DO
+10.    FOR j = 0 TO 2 DO
+11.      originalVertIndex = allTriangles[arrayIndex + j]
+12.      IF NOT vertexRemap.Contains(originalVertIndex) THEN
+13.        newVertIndex = newVertices.Count
+14.        vertexRemap[originalVertIndex] = newVertIndex
+15.        newVertices.Add(vertices[originalVertIndex])
+16.        newNormals.Add(normals[originalVertIndex])
+17.        newUVs.Add(uvs[originalVertIndex])
+18.      END IF
+19.      newTriangles.Add(vertexRemap[originalVertIndex])
+20.    END FOR
+21.  END FOR
+22.  newMesh = CreateMesh(newVertices, newTriangles, newNormals, newUVs)
+23.  RETURN newMesh
+24. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.7 Adaptive Point Sampling Algorithm</h3>
+                            <p><strong>Purpose:</strong> Record incision path points with dynamic spacing control</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 7. AdaptivePointSampling
+1. INPUT: currentMousePosition, lastPoints, pointSpacing
+2. OUTPUT: updatedPointsList
+3. BEGIN
+4.   newPoint = GetWorldPointFromMouse(currentMousePosition)
+5.   IF points.Count = 0 OR Distance(points.LAST, newPoint) > pointSpacing THEN
+6.     points.Add(newPoint)
+7.     UpdateLineRenderer(points)
+8.   END IF
+9.   RETURN points
+10. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.8 Linear Interpolation Movement Algorithm</h3>
+                            <p><strong>Purpose:</strong> Smooth flap movement between original and target positions</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 8. LinearInterpolationMovement
+1. INPUT: currentPosition, targetPosition, moveSpeed, deltaTime
+2. OUTPUT: newPosition
+3. BEGIN
+4.   IF isInMovedPosition THEN
+5.     newPosition = MoveTowards(currentPosition, targetPosition, moveSpeed * deltaTime)
+6.   ELSE
+7.     newPosition = MoveTowards(currentPosition, originalPosition, moveSpeed * deltaTime)
+8.   END IF
+9.   transform.position = newPosition
+10.  RETURN newPosition
+11. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.9 Barycentric Coordinate Surface Snapping Algorithm</h3>
+                            <p><strong>Purpose:</strong> Snap incision start point exactly to mesh surface using barycentric coordinates</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 9. BarycentricSurfaceSnapping
+1. INPUT: hitInfo, triangleVertices, barycentricCoordinates
+2. OUTPUT: snappedSurfacePoint
+3. BEGIN
+4.   p0 = transform.TransformPoint(vertices[triangles[triStart]])
+5.   p1 = transform.TransformPoint(vertices[triangles[triStart+1]])
+6.   p2 = transform.TransformPoint(vertices[triangles[triStart+2]])
+7.   snappedPoint = barycentricCoordinates.x * p0 + 
+                    barycentricCoordinates.y * p1 + 
+                    barycentricCoordinates.z * p2
+8.   RETURN snappedPoint
+9. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.10 Triangle Set Partitioning Algorithm</h3>
+                            <p><strong>Purpose:</strong> Partition mesh triangles into flaps, static mesh, and leftover triangles</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 10. TriangleSetPartitioning
+1. INPUT: allTriangles, faceTriangles, leftFlap, rightFlap, leftoverTriangles
+2. OUTPUT: staticTriangles, flapMeshes
+3. BEGIN
+4.   staticTriangles = EmptyList()
+5.   FOR i = 0 TO allTriangles.length STEP 3 DO
+6.     IF NOT faceTriangles.Contains(i) THEN
+7.       staticTriangles.Add(i)
+8.     END IF
+9.   END FOR
+10.  staticTriangles.AddRange(leftoverTriangles)
+11.  CreateMesh(leftFlap, "LeftFlap")
+12.  CreateMesh(rightFlap, "RightFlap")
+13.  CreateMesh(staticTriangles, "StaticMesh")
+14.  RETURN flapMeshes, staticMesh
+15. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.11 Ray-Triangle Intersection Detection Algorithm</h3>
+                            <p><strong>Purpose:</strong> Detects which triangle face the user clicks on to initiate incision</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 11. RayTriangleIntersection
+1. INPUT: mousePosition, camera
+2. OUTPUT: triangleIndex, hitPoint
+3. BEGIN
+4.   ray = camera.screenPointToRay(mousePosition)
+5.   IF physics.raycast(ray, hit) THEN
+6.     IF meshCollider.isNotConvex THEN
+7.       triangleIndex = hit.triangleIndex
+8.       vertices = meshCollider.mesh.vertices
+9.       triangles = meshCollider.mesh.triangles
+10.      barycentricCoords = hit.barycentricCoordinate
+11.      snapPoint = barycentricCoords.x * vertex0 + 
+                    barycentricCoords.y * vertex1 + 
+                    barycentricCoords.z * vertex2
+12.      RETURN triangleIndex, snapPoint
+13.    ELSE
+14.      fallback to ClosestTriangleSearch
+15.    END IF
+16.  END IF
+17. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.12 Closest Triangle Search Algorithm</h3>
+                            <p><strong>Purpose:</strong> Finds the nearest triangle to a world point when direct collision detection fails</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 12. FindClosestTriangle
+1. INPUT: worldPoint, mesh
+2. OUTPUT: closestTriangleIndex
+3. BEGIN
+4.   closestDistance = infinity
+5.   closestTriangleIndex = -1
+6.   FOR i = 0 TO triangles.length STEP 3 DO
+7.     v0 = transform.transformPoint(vertices[triangles[i]])
+8.     v1 = transform.transformPoint(vertices[triangles[i+1]])
+9.     v2 = transform.transformPoint(vertices[triangles[i+2]])
+10.    triangleCenter = (v0 + v1 + v2) / 3
+11.    distance = euclideanDistance(worldPoint, triangleCenter)
+12.    IF distance < closestDistance THEN
+13.      closestDistance = distance
+14.      closestTriangleIndex = i / 3
+15.    END IF
+16.  END FOR
+17.  RETURN closestTriangleIndex
+18. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.13 Plane Distance Validation Algorithm</h3>
+                            <p><strong>Purpose:</strong> Validates if a point is near a specific face within tolerance</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 13. PlaneDistanceValidation
+1. INPUT: worldPoint, faceIndex, tolerance
+2. OUTPUT: boolean
+3. BEGIN
+4.   triStart = faceIndex * 3
+5.   v0 = transform.transformPoint(vertices[triangles[triStart]])
+6.   v1 = transform.transformPoint(vertices[triangles[triStart+1]])
+7.   v2 = transform.transformPoint(vertices[triangles[triStart+2]])
+8.   facePlane = constructPlane(v0, v1, v2)
+9.   distance = abs(facePlane.getDistanceToPoint(worldPoint))
+10.  RETURN distance <= tolerance
+11. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.14 Normal Vector Matching Algorithm</h3>
+                            <p><strong>Purpose:</strong> Groups triangles that belong to the same face using normal comparison</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 14. NormalMatching
+1. INPUT: mainFaceIndex, mesh
+2. OUTPUT: faceTrianglesList
+3. BEGIN
+4.   referenceTriangleStart = mainFaceIndex * 3
+5.   refV0 = transform.transformPoint(vertices[triangles[referenceTriangleStart]])
+6.   refV1 = transform.transformPoint(vertices[triangles[referenceTriangleStart+1]])
+7.   refV2 = transform.transformPoint(vertices[triangles[referenceTriangleStart+2]])
+8.   referenceNormal = normalize(crossProduct(refV1-refV0, refV2-refV0))
+9.   faceTrianglesList = []
+10.  FOR i = 0 TO triangles.length STEP 3 DO
+11.    tv0 = transform.transformPoint(vertices[triangles[i]])
+12.    tv1 = transform.transformPoint(vertices[triangles[i+1]])
+13.    tv2 = transform.transformPoint(vertices[triangles[i+2]])
+14.    triNormal = normalize(crossProduct(tv1-tv0, tv2-tv0))
+15.    IF dotProduct(triNormal, referenceNormal) > 0.99 THEN
+16.      faceTrianglesList.add(i)
+17.    END IF
+18.  END FOR
+19.  RETURN faceTrianglesList
+20. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.15 Vector Projection and Cut Direction Algorithm</h3>
+                            <p><strong>Purpose:</strong> Determines cut direction and classifies triangles into flaps based on incision line</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 15. VectorProjectionCutting
+1. INPUT: faceTriangles, incisionPoints
+2. OUTPUT: leftFlap, rightFlap, leftoverTriangles
+3. BEGIN
+4.   incisionStart = incisionPoints[0]
+5.   incisionEnd = incisionPoints[last]
+6.   incisionVector = incisionEnd - incisionStart
+7.   cutLength = magnitude(incisionVector)
+8.   cutDirection = normalize(incisionVector)
+9.   isHorizontal = abs(incisionVector.x) > abs(incisionVector.y)
+10.  leftFlap = []
+11.  rightFlap = []
+12.  leftoverTriangles = []
+13.  FOR EACH triangleIndex IN faceTriangles DO
+14.    triangleCenter = calculateTriangleCenter(triangleIndex)
+15.    toCenter = triangleCenter - incisionStart
+16.    projection = dotProduct(toCenter, cutDirection)
+17.    IF projection >= -cutTolerance AND projection <= cutLength + cutTolerance THEN
+18.      IF isHorizontal THEN
+19.        IF triangleCenter.y > midpointY THEN
+20.          leftFlap.add(triangleIndex)
+21.        ELSE
+22.          rightFlap.add(triangleIndex)
+23.        END IF
+24.      ELSE
+25.        IF triangleCenter.x < midpointX THEN
+26.          leftFlap.add(triangleIndex)
+27.        ELSE
+28.          rightFlap.add(triangleIndex)
+29.        END IF
+30.      END IF
+31.    ELSE
+32.      leftoverTriangles.add(triangleIndex)
+33.    END IF
+34.  END FOR
+35.  RETURN leftFlap, rightFlap, leftoverTriangles
+36. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.16 Mesh Subset Extraction Algorithm</h3>
+                            <p><strong>Purpose:</strong> Creates new mesh objects from triangle subsets with vertex remapping</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 16. MeshSubsetExtraction
+1. INPUT: triangleIndices, originalVertices, originalNormals, originalUVs, triangleArray
+2. OUTPUT: newMeshObject
+3. BEGIN
+4.   vertexRemap = {}
+5.   newVertices = []
+6.   newNormals = []
+7.   newUVs = []
+8.   newTriangles = []
+9.   FOR EACH triangleIndex IN triangleIndices DO
+10.    FOR j = 0 TO 2 DO
+11.      originalVertexIndex = triangleArray[triangleIndex + j]
+12.      IF originalVertexIndex NOT IN vertexRemap THEN
+13.        newVertexIndex = newVertices.length
+14.        vertexRemap[originalVertexIndex] = newVertexIndex
+15.        newVertices.add(originalVertices[originalVertexIndex])
+16.        newNormals.add(originalNormals[originalVertexIndex])
+17.        newUVs.add(originalUVs[originalVertexIndex])
+18.      END IF
+19.      newTriangles.add(vertexRemap[originalVertexIndex])
+20.    END FOR
+21.  END FOR
+22.  newMesh = createMesh(newVertices, newTriangles, newNormals, newUVs)
+23.  newMesh.recalculateBounds()
+24.  newMesh.recalculateNormals()
+25.  gameObject = createGameObject(newMesh)
+26.  RETURN gameObject
+27. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.17 Spatial Point Sampling Algorithm</h3>
+                            <p><strong>Purpose:</strong> Records incision path points with adaptive spacing</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 17. SpatialPointSampling
+1. INPUT: mouseInput, raycastHit, pointSpacing
+2. OUTPUT: incisionPointsList
+3. BEGIN
+4.   IF mouseButtonDown THEN
+5.     incisionPointsList.clear()
+6.     ray = camera.screenPointToRay(mousePosition)
+7.     IF raycast(ray, hit) THEN
+8.       incisionPointsList.add(hit.point)
+9.     END IF
+10.  END IF
+11.  IF mouseButtonHeld AND validFace THEN
+12.    ray = camera.screenPointToRay(mousePosition)
+13.    IF raycast(ray, hit) THEN
+14.      IF pointNearFace(hit.point, currentFace, tolerance) THEN
+15.        lastPoint = incisionPointsList[last]
+16.        IF euclideanDistance(lastPoint, hit.point) > pointSpacing THEN
+17.          incisionPointsList.add(hit.point)
+18.        END IF
+19.      END IF
+20.    END IF
+21.  END IF
+22.  RETURN incisionPointsList
+23. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.18 Linear Interpolation Movement Algorithm</h3>
+                            <p><strong>Purpose:</strong> Provides smooth flap movement with toggle states</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 18. LinearInterpolationMovement
+1. INPUT: keyInput, maxDistance, moveSpeed
+2. OUTPUT: updatedPosition
+3. BEGIN
+4.   IF keyPressed AND NOT shifted THEN
+5.     direction = getDirectionByFlapType()
+6.     targetPosition = originalPosition + direction * maxDistance
+7.     isInMovedPosition = true
+8.   END IF
+9.   IF shiftKeyPressed THEN
+10.    isInMovedPosition = false
+11.  END IF
+12.  IF isInMovedPosition THEN
+13.    currentPosition = moveTowards(currentPosition, targetPosition, 
+                                    moveSpeed * deltaTime)
+14.  ELSE
+15.    currentPosition = moveTowards(currentPosition, originalPosition, 
+                                    moveSpeed * deltaTime)
+16.  END IF
+17.  RETURN currentPosition
+18. END</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="algorithm-card">
+                            <h3>3.19 Barycentric Coordinate Interpolation Algorithm</h3>
+                            <p><strong>Purpose:</strong> Precisely calculates surface points using triangle coordinates</p>
+                            <div class="algorithm-code">
+                                <pre><code>ALGORITHM 19. BarycentricInterpolation
+1. INPUT: hitBarycentricCoordinate, triangleVertices
+2. OUTPUT: preciseSurfacePoint
+3. BEGIN
+4.   p0 = transform.transformPoint(vertices[triangle[0]])
+5.   p1 = transform.transformPoint(vertices[triangle[1]])
+6.   p2 = transform.transformPoint(vertices[triangle[2]])
+7.   u = barycentricCoordinate.x
+8.   v = barycentricCoordinate.y
+9.   w = barycentricCoordinate.z
+10.  snappedPoint = u * p0 + v * p1 + w * p2
+11.  RETURN snappedPoint
+12. END</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="images">
+                    <h2>Visual Results</h2>
+                    <div class="image-grid">
+                        <div class="image-card">
+                            <img src="assets/pic1.png" alt="Initial unmodified high-resolution triangle mesh">
+                            <p><strong>Figure 1:</strong> Initial unmodified high-resolution triangle mesh before incision. The mesh remains topologically intact and undistorted, serving as the baseline for the face-specific cutting system.</p>
+                        </div>
+                        <div class="image-card">
+                            <img src="assets/pic2.png" alt="Mesh state after incision">
+                            <p><strong>Figure 2:</strong> Mesh state after incision path classification and flap separation. The algorithm identifies and reassigns triangle faces into distinct flap regions without altering the underlying topology, enabling localized mesh opening and internal visualization.</p>
+                        </div>
+                        <div class="image-card">
+                            <img src="assets/pic3.png" alt="Interactive flap manipulation">
+                            <p><strong>Figure 3:</strong> Interactive flap manipulation showing the red inner object behind the mesh to validate the incision's completeness. The system demonstrates clean mesh opening with preserved structural integrity.</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <section class="discussion">
+                    <h2>5. Discussion</h2>
+                    <p>Our method demonstrates that real-time, non-destructive incision of high-poly triangle meshes is not only feasible, but highly scalable with localized operations. By operating exclusively on face groups and avoiding any form of global remeshing, we maintain:</p>
+
+                    <ul>
+                        <li><strong>Performance:</strong> Constant frame rates in the interactive range</li>
+                        <li><strong>Topology Preservation:</strong> No change in underlying mesh except local reorganization</li>
+                        <li><strong>Visual Continuity:</strong> No artifacts, UV issues, or normal distortions</li>
+                        <li><strong>User Interactivity:</strong> Natural-feeling cut-and-peel system</li>
+                    </ul>
+
+                    <p>Unlike boolean cutters or simulation-heavy FEM systems, our method supports real-time user input and clean mesh opening, making it ideal for VR surgical training, AR object modeling, or procedural 3D interactions. Furthermore, the use of face-normal grouping and directional classification for flap assignment offers a new, intuitive way to isolate mesh features for interaction without compromising geometry.</p>
+                </section>
+
+                <section class="results">
+                    <h2>4. Results</h2>
+                    <p>To evaluate the effectiveness and scalability of our non-destructive mesh incision framework, we conducted experiments on high-resolution triangle meshes within Unity3D, focusing on incision precision, mesh integrity, and real-time performance.</p>
+
+                    <p>Our test mesh consisted of over 45,000 triangles, with incisions performed across planar and slightly curved face regions. As shown in Figures 1–3, the system accurately:</p>
+                    <ul>
+                        <li>Detected the clicked triangle face</li>
+                        <li>Grouped neighboring triangles based on normal similarity</li>
+                        <li>Projected a user-drawn incision line</li>
+                        <li>Classified triangles into flaps</li>
+                        <li>Reconstructed each flap as a separate, interactable mesh</li>
+                    </ul>
+
+                    <p>We placed a red inner object behind the mesh to visually validate the incision's completeness (Figure 2). Frame rates remained above 120 FPS during all interactions, even on high-poly models, with no tearing, null triangles, or UV distortions observed.</p>
+
+                    <div class="results-table">
+                        <h3>Performance Metrics</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mesh Size</td>
+                                    <td>49,152 triangles</td>
+                                </tr>
+                                <tr>
+                                    <td>Avg. Incision Time</td>
+                                    <td>~110 ms</td>
+                                </tr>
+                                <tr>
+                                    <td>Post-Cut Frame Rate</td>
+                                    <td>120–160 FPS</td>
+                                </tr>
+                                <tr>
+                                    <td>Mesh Integrity</td>
+                                    <td>100% (no holes/tears)</td>
+                                </tr>
+                                <tr>
+                                    <td>Triangle Loss</td>
+                                    <td>0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Precision (cut vs drawn)</td>
+                                    <td>Sub-triangle (barycentric)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="conclusion">
+                    <h2>6. Conclusion</h2>
+                    <p>We presented a novel, real-time incision system for high-resolution triangle meshes that performs
+                        face-specific, non-destructive cutting with interactive flap simulation in Unity. Our method
+                        operates with sub-triangle precision, preserving mesh integrity, and requiring no remeshing or
+                        topology alteration.</p>
+
+                    <p>By grouping faces using normals and projecting cuts onto defined regions, we split the mesh into
+                        interactable flaps in a way that mimics physical incisions. The system runs efficiently even on
+                        dense meshes (50K+ triangles), achieving frame rates above 120 FPS while maintaining full
+                        structural coherence.</p>
+
+                    <p>This work bridges a critical gap in current mesh editing tools and opens new doors for immersive,
+                        interactive 3D applications in education, healthcare, design, and simulation.</p>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Bharath Honakatti, Manoj R. Department of Computer Science and Engineering.</p>
+            <p>Real-Time Interactive Cutting of High-Resolution Triangle Meshes Without Topological Destruction</p>
+        </div>
+    </footer>
+</body>
+
+</html>
